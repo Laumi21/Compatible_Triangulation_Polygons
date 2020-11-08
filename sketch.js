@@ -13,6 +13,9 @@ class Point {
     this.x = x;
     this.y = y;
   }
+  clone() {
+    return new Point(this.x, this.y);
+  }
 }
 class Triangle {
   constructor(pt1, pt2, pt3) {
@@ -32,14 +35,13 @@ class Polygon {
     }
 
     this.vertices.push(pt);
-    console.log(this.vertices.length);
+    //console.log(this.vertices.length);
   }
   addEdge(pt1, pt2) {
     this.edges.push([pt1, pt2]);
   }
   draw() {
     //console.log("a");
-
     for (let i = 0; i < this.vertices.length; i++) {
       //console.log("a");
       fill("green"); //get color
@@ -55,8 +57,18 @@ class Polygon {
       ); //trace lines
     }
   }
+  clone() {
+    //make a clone of the polygon
+    var poly = new Polygon();
+    for (let i = 0; i < this.vertices.length; i++) {
+      poly.addNewVertice(this.vertices[i].clone());
+    }
+    poly.addEdge(poly.vertices[0], poly.vertices[poly.vertices.length - 1]);
+    return poly;
+  }
 }
 
+/*
 function findMinX() {
   var minPt = points[0];
   for (i = 0; i < points.length; i++) {
@@ -67,14 +79,15 @@ function findMinX() {
   }
   return minPt;
 }
+*/
 
-var points = []; //list of pts
-var pointsOk = []; //list of already processed pts
-var triangles = []; //list of triangles
-var restart = false;
-var computeTri = false;
-var minXPt = null;
-var minXPtId = null;
+//var points = []; //list of pts
+//var pointsOk = []; //list of already processed pts
+//var triangles = []; //list of triangles
+var noClick = false;
+//var computeTri = false;
+//var minXPt = null;
+//var minXPtId = null;
 //some constants
 const LEFT = "LEFT";
 const ALIGNED = "ALIGNED";
@@ -93,26 +106,35 @@ function setup() {
   //create a reset button to reset the selection
   button = createButton("Reset");
   button.position(30, 75);
-  button.mousePressed(clearArray);
-  //button2 = createButton("Find an ear");
-  //button2.position(30, 95);
-  //button2.mousePressed(findAnEar);
+  button.mousePressed(reset);
+  button2 = createButton("Next");
+  button2.position(30, 95);
+  button2.mousePressed(next);
   //button3 = createButton("Triangulate");
   //button3.position(30, 115);
   //button3.mousePressed(triangulate);
   fill("black");
   textSize(40);
 }
-function clearArray() {
+
+function next() {
+  noClick = true;
+  if (phase === 0 && poly1.vertices.length > 2) {
+    //TODO some check
+    poly1.addEdge(poly1.vertices[0], poly1.vertices[poly1.vertices.length - 1]);
+    poly2 = poly1.clone();
+    phase += 1;
+  } else if (phase === 1) {
+    phase += 1;
+  }
+}
+function reset() {
   //clear the arrays for the reset
+  noClick = true;
+  phase = 0;
   poly1.vertices.length = 0;
   poly1.edges.length = 0;
   //var poly1 = new Polygon();
-  points.length = 0; //clear the array
-  restart = true;
-  computeTri = false;
-  triangles.length = 0;
-  pointsOk.length = 0;
 }
 
 function getText() {
@@ -134,7 +156,12 @@ function draw() {
   textSize(18);
 
   text(getText(), 30, 20);
-  poly1.draw();
+  if (phase === 0) {
+    poly1.draw();
+  } else if (phase === 1) {
+    poly2.draw();
+  }
+
   /*
   if (computeTri) {
     text('press "Find an ear" to find a ear in the polygon', 30, 20);
@@ -321,8 +348,8 @@ windowResized = function () {
 
 function mousePressed() {
   //deal with click of the mouse
-  if (restart) {
-    restart = false;
+  if (noClick) {
+    noClick = false;
   } else {
     if (phase === 0) {
       poly1.addNewVertice(new Point(mouseX, mouseY));
