@@ -31,11 +31,38 @@ class Polygon {
     this.edges = [];
   }
   addNewVertice(pt) {
+    var ok = true;
     if (this.vertices.length > 0) {
+      if (
+        this.vertices[this.vertices.length - 1].x === pt.x &&
+        this.vertices[this.vertices.length - 1].y === pt.y
+      ) {
+        ok = false;
+      }
+      if (this.vertices.length > 1) {
+        if (
+          this.vertices[this.vertices.length - 2].x === pt.x &&
+          this.vertices[this.vertices.length - 2].y === pt.y
+        ) {
+          ok = false;
+        }
+        if (
+          determinant(
+            this.vertices[this.vertices.length - 2],
+            this.vertices[this.vertices.length - 1],
+            pt
+          ) === 0
+        ) {
+          ok = false;
+        }
+      }
+    }
+    if (this.vertices.length > 0 && ok) {
       this.addEdge(this.vertices[this.vertices.length - 1], pt);
     }
-
-    this.vertices.push(pt);
+    if (ok) {
+      this.vertices.push(pt);
+    }
     //console.log(this.vertices.length);
   }
   addEdge(pt1, pt2) {
