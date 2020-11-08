@@ -12,6 +12,7 @@ class Point {
   constructor(x, y) {
     this.x = x;
     this.y = y;
+    this.isSelected = false;
   }
   clone() {
     return new Point(this.x, this.y);
@@ -44,8 +45,13 @@ class Polygon {
     //console.log("a");
     for (let i = 0; i < this.vertices.length; i++) {
       //console.log("a");
-      fill("green"); //get color
-      ellipse(this.vertices[i].x, this.vertices[i].y, 10, 10);
+      if (this.vertices[i].isSelected) {
+        fill("orange");
+      } else {
+        fill("green");
+      }
+
+      ellipse(this.vertices[i].x, this.vertices[i].y, pointSize, pointSize);
       text(str(i), this.vertices[i].x, this.vertices[i].y);
     }
     for (let i = 0; i < this.edges.length; i++) {
@@ -85,6 +91,7 @@ function findMinX() {
 //var pointsOk = []; //list of already processed pts
 //var triangles = []; //list of triangles
 var noClick = false;
+var selectedPoint = null;
 //var computeTri = false;
 //var minXPt = null;
 //var minXPtId = null;
@@ -99,6 +106,7 @@ const OUTSIDE = "OUTSIDE";
 var poly1 = new Polygon();
 var poly2;
 var phase = 0;
+var pointSize = 10;
 
 function setup() {
   //create the buttons
@@ -144,6 +152,8 @@ function getText() {
       poly1.vertices.length +
       " point(s) selected)"
     );
+  } else if (phase === 1) {
+    return "Move the point to build the polygon 2 ";
   } else {
     return "TODO";
   }
@@ -160,6 +170,8 @@ function draw() {
     poly1.draw();
   } else if (phase === 1) {
     poly2.draw();
+  } else if (phase === 2) {
+    poly1.draw();
   }
 
   /*
@@ -346,6 +358,23 @@ windowResized = function () {
   resizeCanvas(windowWidth, windowHeight);
 };
 
+function selectPoint(x, y) {
+  for (let i = 0; i < poly2.vertices.length; i++) {
+    if (
+      abs(poly2.vertices[i].x - x) <= pointSize &&
+      abs(poly2.vertices[i].y - y) <= pointSize
+    ) {
+      poly2.vertices[i].isSelected = true;
+      selectedPoint = poly2.vertices[i];
+      break;
+    }
+  }
+}
+function mouseReleased() {
+  selectedPoint.isSelected = false;
+  selectedPoint.x = mouseX;
+  selectedPoint.y = mouseY;
+}
 function mousePressed() {
   //deal with click of the mouse
   if (noClick) {
@@ -353,6 +382,8 @@ function mousePressed() {
   } else {
     if (phase === 0) {
       poly1.addNewVertice(new Point(mouseX, mouseY));
+    } else if (phase === 1) {
+      selectPoint(mouseX, mouseY);
     }
     //points.push(new Point(mouseX, mouseY));
     //minXPt = findMinX();
