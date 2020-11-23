@@ -25,6 +25,25 @@ class Triangle {
     this.pt3 = pt3;
   }
 }
+class Edge {
+  constructor(pt1, pt2) {
+    this.start = pt1;
+    this.end = pt2;
+  }
+  intersect(edge2) {
+    //return true if this edgede and edge2 intersect
+    let a1 = orientation(this.start, this.end, edge2.start);
+    let a2 = orientation(this.start, this.end, edge2.end);
+    if (a1 !== ALIGNED && a2 !== ALIGNED && a1 !== a2) {
+      let b1 = orientation(edge2.start, edge2.end, this.start);
+      let b2 = orientation(edge2.start, edge2.end, this.end);
+      if (b1 !== ALIGNED && b2 !== ALIGNED && b1 !== b2) {
+        return true;
+      }
+    }
+    return false;
+  }
+}
 class Polygon {
   constructor() {
     this.vertices = [];
@@ -66,7 +85,8 @@ class Polygon {
     //console.log(this.vertices.length);
   }
   addEdge(pt1, pt2) {
-    this.edges.push([pt1, pt2]);
+    //this.edges.push([pt1, pt2]);
+    this.edges.push(new Edge(pt1, pt2));
   }
   draw() {
     //console.log("a");
@@ -83,11 +103,11 @@ class Polygon {
     }
     for (let i = 0; i < this.edges.length; i++) {
       line(
-        this.edges[i][0].x,
-        this.edges[i][0].y,
-        this.edges[i][1].x,
-        this.edges[i][1].y
-      ); //trace lines
+        this.edges[i].start.x,
+        this.edges[i].start.y,
+        this.edges[i].end.x,
+        this.edges[i].end.y
+      );
     }
   }
   clone() {
@@ -98,6 +118,19 @@ class Polygon {
     }
     poly.addEdge(poly.vertices[0], poly.vertices[poly.vertices.length - 1]);
     return poly;
+  }
+  checkSelfIntersect() {
+    for (let i = 0; i < this.edges.length; i++) {
+      for (let j = 0; j < this.edges.length; j++) {
+        if (i !== j) {
+          let check = this.edges[i].intersect(this.edges[j]);
+          if (check) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
   }
 }
 
@@ -132,6 +165,7 @@ const OUTSIDE = "OUTSIDE";
 
 var poly1 = new Polygon();
 var poly2;
+var errorMessage = "";
 var phase = 0;
 var pointSize = 10;
 
@@ -157,10 +191,23 @@ function next() {
   if (phase === 0 && poly1.vertices.length > 2) {
     //TODO some check
     poly1.addEdge(poly1.vertices[0], poly1.vertices[poly1.vertices.length - 1]);
-    poly2 = poly1.clone();
-    phase += 1;
+    let check = poly1.checkSelfIntersect();
+    if (check) {
+      errorMessage = "The polygon must be a simple polygon. Please reset.";
+    } else {
+      //no intersection
+      errorMessage = "";
+      poly2 = poly1.clone();
+      phase += 1;
+    }
   } else if (phase === 1) {
-    phase += 1;
+    let check = poly2.checkSelfIntersect();
+    if (check) {
+      errorMessage = "The polygon 2 must be a simple polygon.";
+    } else {
+      errorMessage = "";
+      phase += 1;
+    }
   }
 }
 function reset() {
@@ -169,6 +216,7 @@ function reset() {
   phase = 0;
   poly1.vertices.length = 0;
   poly1.edges.length = 0;
+  errorMessage = "";
   //var poly1 = new Polygon();
 }
 
@@ -180,7 +228,7 @@ function getText() {
       " point(s) selected)"
     );
   } else if (phase === 1) {
-    return "Move the point to build the polygon 2 ";
+    return "Drag and drop points to build the polygon 2 ";
   } else {
     return "TODO";
   }
@@ -193,6 +241,11 @@ function draw() {
   textSize(18);
 
   text(getText(), 30, 20);
+  stroke("red");
+  fill("red");
+  text(errorMessage, 30, 50);
+  stroke("black");
+  fill("black");
   if (phase === 0) {
     poly1.draw();
   } else if (phase === 1) {
@@ -350,6 +403,7 @@ function getPt(id, liste) {
     return liste[id];
   }
 }
+*/
 function orientation(a, b, c) {
   //return the orientation of the 3 points (left, aligned or right)
   var det = determinant(a, b, c);
@@ -361,6 +415,7 @@ function orientation(a, b, c) {
     return LEFT;
   }
 }
+/*
 
 function checkLeftTurn() {
   //check if the polygon follow right turn convention or left turn
@@ -398,9 +453,12 @@ function selectPoint(x, y) {
   }
 }
 function mouseReleased() {
-  selectedPoint.isSelected = false;
-  selectedPoint.x = mouseX;
-  selectedPoint.y = mouseY;
+  if (!noClick && selectPoint !== null) {
+    selectedPoint.isSelected = false;
+    selectedPoint.x = mouseX;
+    selectedPoint.y = mouseY;
+    selectedPoint = null;
+  }
 }
 function mousePressed() {
   //deal with click of the mouse
