@@ -132,6 +132,48 @@ class Polygon {
     }
     return false;
   }
+  makeLeftTurn() {
+    //check if the polygon follow right turn convention or left turn
+    //if it is right turn, the list is reversed to get a left turn
+
+    let id = this.findMinX();
+    console.log("ahhh");
+    let leftId = id - 1 < 0 ? this.vertices.length + (id - 1) : id - 1;
+    let rightId =
+      id + 1 > this.vertices.length - 1
+        ? id + 1 - this.vertices.length
+        : id + 1;
+    //left-most point is always convex.
+    var orient = orientation(
+      this.vertices[leftId],
+      this.vertices[id],
+      this.vertices[rightId]
+    );
+    if (orient === RIGHT) {
+      this.vertices.reverse();
+      this.edges.reverse();
+      for (let j = 0; j < this.edges.length; j++) {
+        let temp = this.edges[j].start;
+        this.edges[j].start = this.edges[j].end;
+        this.edges[j].end = temp;
+      }
+    }
+  }
+  findMinX() {
+    let minPt = this.vertices[0];
+    let minXPtId = 0;
+    for (let i = 0; i < this.vertices.length; i++) {
+      if (this.vertices[i].x < minPt.x) {
+        minPt = this.vertices[i];
+        minXPtId = i;
+      }
+    }
+    console.log("min:" + str(minXPtId));
+    return minXPtId;
+  }
+}
+function findCompatibleTriangulation(tri, poly) {
+  let edge1 = poly.edges[0];
 }
 
 /*
@@ -197,6 +239,7 @@ function next() {
     } else {
       //no intersection
       errorMessage = "";
+      poly1.makeLeftTurn();
       poly2 = poly1.clone();
       phase += 1;
     }
@@ -206,6 +249,7 @@ function next() {
       errorMessage = "The polygon 2 must be a simple polygon.";
     } else {
       errorMessage = "";
+      poly2.makeLeftTurn();
       phase += 1;
     }
   }
@@ -251,7 +295,7 @@ function draw() {
   } else if (phase === 1) {
     poly2.draw();
   } else if (phase === 2) {
-    poly1.draw();
+    poly2.draw();
   }
 
   /*
