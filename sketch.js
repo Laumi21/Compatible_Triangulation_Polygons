@@ -1,21 +1,23 @@
 /* eslint-disable no-undef, no-unused-vars */
 
-// homework 3
+// Project
 // Laurie Van Bogaert
-// First select points to form a polygon
-// then press "Find an ear" to find a ear in the polygon
-// To triangulate the polygon either press the button "Find an ear" multiple time
-// or the button "Triangulate" to triangulate the polygon in one time.
-// press reset to choose a new polygon
+//
 
 class Point {
   constructor(x, y) {
     this.x = x;
     this.y = y;
+    this.id = null;
+    this.polyId = null;
+    //this.poly2Id = null;
     this.isSelected = false;
   }
   clone() {
-    return new Point(this.x, this.y);
+    let clo = new Point(this.x, this.y);
+    clo.polyId = this.polyId;
+    clo.id = this.id;
+    return clo;
   }
 }
 class Triangle {
@@ -23,6 +25,42 @@ class Triangle {
     this.pt1 = pt1;
     this.pt2 = pt2;
     this.pt3 = pt3;
+    this.edges = [];
+    this.edges.push(new Edge(pt1, pt2));
+    this.edges.push(new Edge(pt2, pt3));
+    this.edges.push(new Edge(pt3, pt1));
+  }
+  clone() {
+    let a = this.pt1.clone();
+    let b = this.pt2.clone();
+    let c = this.pt3.clone();
+    return new Triangle(a, b, c);
+  }
+  IsLeftTurn() {
+    let ori = orientation(this.pt1, this.pt2, this.pt3);
+    //console.log(ori);
+    return ori === RIGHT ? false : true;
+  }
+  contain(pt) {
+    let or1 = orientation(this.pt1, this.pt2, pt);
+    let or2 = orientation(this.pt2, this.pt3, pt);
+    let or3 = orientation(this.pt3, this.pt1, pt);
+    if (or1 === LEFT && or2 === LEFT && or3 === LEFT) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+  containOneOf(ptList) {
+    console.log("a");
+    for (let i = 0; i < ptList.length; i++) {
+      let res = this.contain(ptList[i]);
+      if (res) {
+        return true;
+      }
+    }
+    console.log("nothing");
+    return false;
   }
 }
 class Edge {
@@ -42,6 +80,10 @@ class Edge {
       }
     }
     return false;
+  }
+  clone() {
+    let clo = new Edge(this.start.clone(), this.end.clone());
+    return clo;
   }
 }
 class Polygon {
@@ -112,12 +154,20 @@ class Polygon {
   }
   clone() {
     //make a clone of the polygon
-    var poly = new Polygon();
-    for (let i = 0; i < this.vertices.length; i++) {
-      poly.addNewVertice(this.vertices[i].clone());
+    var clo = new Polygon();
+    var vert = copyList(this.vertices);
+    clo.vertices = vert;
+    clo.edges.length = this.edges.length;
+    for (let i = 0; i < this.edges.length; i++) {
+      let st = this.edges[i].start.id;
+      let en = this.edges[i].end.id;
+      clo.edges[i] = new Edge(vert[st], vert[en]);
+      //console.log(newE.length);
     }
-    poly.addEdge(poly.vertices[0], poly.vertices[poly.vertices.length - 1]);
-    return poly;
+    //console.log(clo.edges.length);
+    //console.log(clo.edges);
+    //poly.edges = newE;
+    return clo;
   }
   checkSelfIntersect() {
     for (let i = 0; i < this.edges.length; i++) {
@@ -132,12 +182,21 @@ class Polygon {
     }
     return false;
   }
+  checkIntersection(e) {
+    for (let j = 0; j < this.edges.length; j++) {
+      let check = e.intersect(this.edges[j]);
+      if (check) {
+        return true;
+      }
+    }
+    return false;
+  }
   makeLeftTurn() {
     //check if the polygon follow right turn convention or left turn
     //if it is right turn, the list is reversed to get a left turn
 
     let id = this.findMinX();
-    console.log("ahhh");
+    //console.log("ahhh");
     let leftId = id - 1 < 0 ? this.vertices.length + (id - 1) : id - 1;
     let rightId =
       id + 1 > this.vertices.length - 1
@@ -168,14 +227,129 @@ class Polygon {
         minXPtId = i;
       }
     }
-    console.log("min:" + str(minXPtId));
+    //console.log("min:" + str(minXPtId));
     return minXPtId;
   }
+  remove(tri) {
+    for (let i = 0; i < tri.edges.length; i++) {
+      let id = -1;
+      for (let j = 0; j < this.edges.length; j++) {
+        if (
+          (this.edges[j].start.x === tri.edges[i].start.x &&
+            this.edges[j].end.x === tri.edges[i].end.x &&
+            this.edges[j].start.y === tri.edges[i].start.y &&
+            this.edges[j].end.y === tri.edges[i].end.y) ||
+          (this.edges[j].start.x === tri.edges[i].end.x &&
+            this.edges[j].end.x === tri.edges[i].start.x &&
+            this.edges[j].start.y === tri.edges[i].end.y &&
+            this.edges[j].end.y === tri.edges[i].start.y)
+        ) {
+          id = j;
+          break;
+        }
+      }
+      //console.log("test2");
+      if (id === -1) {
+        this.edges.push(tri.edges[i]);
+        console.log(tri.edges[i]);
+        console.log("add");
+      } else {
+        this.edges.splice(id, 1);
+        //console.log("remove");
+        console.log("remove (" + str(this.edges.length) + " left)");
+      }
+    }
+    this.checkPoints([tri.pt1, tri.pt2, tri.pt3]);
+  }
+  checkPoints(points) {
+    for (let i = 0; i < points.length; i++) {
+      let found = false;
+      for (let j = 0; j < this.edges.length; j++) {
+        if (
+          (points[i].x === this.edges[j].start.x &&
+            points[i].y === this.edges[j].start.y) ||
+          (points[i].x === this.edges[j].end.x &&
+            points[i].y === this.edges[j].end.y)
+        ) {
+          console.log("pt found");
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        //console.log("must remove");
+        let id = -1;
+        for (let j = 0; j < this.vertices.length; j++) {
+          if (
+            points[i].x === this.vertices[j].x &&
+            points[i].y === this.vertices[j].y
+          ) {
+            id = j;
+            break;
+          }
+        }
+        if (id !== -1) {
+          this.vertices.splice(id, 1);
+        }
+      }
+    }
+    this.identifyVertices();
+  }
+  identifyVertices() {
+    for (let i = 0; i < this.vertices.length; i++) {
+      this.vertices[i].id = i;
+    }
+  }
 }
-function findCompatibleTriangulation(tri, poly) {
-  let edge1 = poly.edges[0];
+function findCompatibleTriangulation(triangles, poly) {
+  let ab = poly.edges[0];
+  if (triangles.length > poly1.edges) {
+    return null;
+  }
+  for (let i = 0; i < poly.vertices.length; i++) {
+    let c = poly.vertices[i];
+    console.log("turn: " + str(i));
+    if (c !== ab.start && c !== ab.end) {
+      let abc = new Triangle(ab.start, ab.end, c);
+      //console.log(abc);
+      if (abc.IsLeftTurn()) {
+        let interac1 = poly1.checkIntersection(new Edge(ab.start, c));
+        let interbc1 = poly1.checkIntersection(new Edge(ab.end, c));
+        let inside = abc.containOneOf(poly1.vertices);
+        //TODO checks for poly2
+        if (!interac1 && !interbc1 && !inside) {
+          let newTriangles = copyList(triangles);
+          newTriangles.push(abc);
+          //console.log("zzz");
+          console.log("clonage");
+          console.log(poly);
+          let newPoly = poly.clone();
+          console.log(newPoly);
+          newPoly.remove(abc);
+          //console.log("zzza");
+          if (newPoly.vertices.length !== 0) {
+            //newTriangles = findCompatibleTriangulation(newTriangles, newPoly);
+            if (newTriangles !== null) {
+              polyCheck = newPoly;
+              return newTriangles;
+            }
+          } else {
+            polyCheck = newPoly;
+            return newTriangles;
+          }
+        }
+      }
+    }
+  }
+  return null;
 }
-
+function copyList(li) {
+  let newLi = [];
+  for (let i = 0; i < li.length; i++) {
+    newLi.push(li[i].clone());
+  }
+  return newLi;
+}
 /*
 function findMinX() {
   var minPt = points[0];
@@ -207,6 +381,8 @@ const OUTSIDE = "OUTSIDE";
 
 var poly1 = new Polygon();
 var poly2;
+var polyCheck = null;
+var liTri = [];
 var errorMessage = "";
 var phase = 0;
 var pointSize = 10;
@@ -234,6 +410,10 @@ function next() {
     //TODO some check
     poly1.addEdge(poly1.vertices[0], poly1.vertices[poly1.vertices.length - 1]);
     let check = poly1.checkSelfIntersect();
+    for (let i = 0; i < poly1.vertices.length; i++) {
+      poly1.vertices[i].polyId = i;
+    }
+    poly1.identifyVertices();
     if (check) {
       errorMessage = "The polygon must be a simple polygon. Please reset.";
     } else {
@@ -253,13 +433,26 @@ function next() {
       phase += 1;
     }
   }
+  if (phase > 1) {
+    if (polyCheck === null) {
+      polyCheck = poly1.clone();
+    }
+    errorMessage = "";
+    //console.log("neh");
+    liTri = findCompatibleTriangulation(liTri, polyCheck);
+    console.log("done");
+    console.log(liTri);
+    console.log(polyCheck);
+  }
 }
 function reset() {
   //clear the arrays for the reset
   noClick = true;
+  polyCheck = null;
   phase = 0;
   poly1.vertices.length = 0;
   poly1.edges.length = 0;
+  liTri = [];
   errorMessage = "";
   //var poly1 = new Polygon();
 }
@@ -295,159 +488,18 @@ function draw() {
   } else if (phase === 1) {
     poly2.draw();
   } else if (phase === 2) {
-    poly2.draw();
+    //polyCheck.draw();
+    stroke("red");
+    for (let i = 0; i < liTri.length; i++) {
+      line(liTri[i].pt1.x, liTri[i].pt1.y, liTri[i].pt2.x, liTri[i].pt2.y);
+      line(liTri[i].pt2.x, liTri[i].pt2.y, liTri[i].pt3.x, liTri[i].pt3.y);
+      line(liTri[i].pt3.x, liTri[i].pt3.y, liTri[i].pt1.x, liTri[i].pt1.y);
+    }
+    stroke("black");
+    polyCheck.draw();
   }
+}
 
-  /*
-  if (computeTri) {
-    text('press "Find an ear" to find a ear in the polygon', 30, 20);
-    text(
-      'To triangulate the polygon either press the button "Find an ear" multiple time',
-      30,
-      40
-    );
-    text('or the button "Triangulate" one time.', 30, 60);
-  } else {
-    text(
-      "Please click to select the polygon ( " +
-        points.length +
-        " point(s) selected)",
-      30,
-      50
-    );
-  }*/
-
-  /*
-  for (i = 0; i < points.length; i++) {
-    if (points[i] === minXPt) {
-      fill("orange"); //get color
-    } else {
-      fill("green"); //get color
-    }
-    ellipse(points[i].x, points[i].y, 10, 10);
-    text(str(i), points[i].x, points[i].y);
-    //trace the line for the triangle
-    if (i < points.length - 1) {
-      line(points[i].x, points[i].y, points[i + 1].x, points[i + 1].y); //trace lines
-    }
-    if (i === points.length - 1) {
-      line(
-        points[0].x,
-        points[0].y,
-        points[points.length - 1].x,
-        points[points.length - 1].y
-      ); //trace lines
-    }
-  }
-  fill("black");
-  stroke("red");
-  for (i in triangles) {
-    var tri = triangles[i];
-    line(tri.pt1.x, tri.pt1.y, tri.pt2.x, tri.pt2.y); //trace lines
-    line(tri.pt3.x, tri.pt3.y, tri.pt2.x, tri.pt2.y); //trace lines
-    line(tri.pt1.x, tri.pt1.y, tri.pt3.x, tri.pt3.y); //trace lines
-  }
-  for (i in pointsOk) {
-    fill("grey");
-    ellipse(pointsOk[i].x, pointsOk[i].y, 10, 10);
-  }
-  */
-}
-/*
-function triangulate() {
-  //call findAnEar multiple time until the polygon is triangulated
-  while (points.length > 0) {
-    findAnEar();
-  }
-}
-function findAnEar() {
-  //find an ear, create a triangle and remove the point from the list of points
-  if (!computeTri) {
-    checkLeftTurn();
-  }
-  computeTri = true;
-  for (i = 0; i < points.length; i++) {
-    var central = points[i];
-    var previous = getPt(i - 1, points);
-    var next = getPt(i + 1, points);
-    var testOk = checkEar(i);
-    if (testOk) {
-      triangles.push(new Triangle(previous, central, next));
-      pointsOk.push(central);
-      points.splice(i, 1);
-      console.log(points.length);
-      if (points.length === 3) {
-        triangles.push(new Triangle(points[0], points[1], points[2]));
-        pointsOk.push(points[0]);
-        pointsOk.push(points[1]);
-        pointsOk.push(points[2]);
-        points.length = 0;
-        console.log("last Triangle");
-      }
-      break;
-    }
-  }
-}
-function checkEar(n) {
-  //check if the point at position n is an ear
-  var previous = getPt(n - 1, points);
-  var next = getPt(n + 1, points);
-  var central = points[n];
-  var earOrient = orientation(previous, next, central);
-  if (earOrient === LEFT) {
-    console.log("bad orient");
-    return false;
-  }
-  for (j = 0; j < points.length; j++) {
-    if (
-      j !== getCorrectedId(n - 1, points) &&
-      j !== getCorrectedId(n + 1, points) &&
-      j !== n
-    ) {
-      console.log("j: " + str(j) + " n: " + str(n));
-      //var test = orientation(previous, next, points[j]);
-      var test = testInside(previous, central, next, points[j]);
-      if (test === INSIDE) {
-        return false;
-      }
-    }
-  }
-  return true;
-}
-function testInside(one, two, three, four) {
-  //the point will be inside if the orientation determinant are all left or right
-  var first = determinant(one, two, four);
-  var second = determinant(two, three, four);
-  var third = determinant(three, one, four);
-  if (first * second >= 0 && second * third >= 0 && third * first >= 0) {
-    return INSIDE;
-  } else {
-    return OUTSIDE;
-  }
-}
-function getCorrectedId(id, liste) {
-  //get corrected id for the list (it cannot be smaller than 0 or larger than the list size)
-  var len = liste.length;
-  if (id < 0) {
-    return len + id;
-  } else if (id >= len) {
-    return id - len;
-  } else {
-    return id;
-  }
-}
-function getPt(id, liste) {
-  //get corrected pt for the list (the indice cannot be smaller than 0 or larger than the list size)
-  var len = liste.length;
-  if (id < 0) {
-    return liste[len + id];
-  } else if (id >= len) {
-    return liste[id - len];
-  } else {
-    return liste[id];
-  }
-}
-*/
 function orientation(a, b, c) {
   //return the orientation of the 3 points (left, aligned or right)
   var det = determinant(a, b, c);
@@ -459,20 +511,7 @@ function orientation(a, b, c) {
     return LEFT;
   }
 }
-/*
 
-function checkLeftTurn() {
-  //check if the polygon follow right turn convention or left turn
-  //if it is right turn, the list is reversed to get a left turn
-  var leftMin = getPt(minXPtId - 1, points);
-  var rightMin = getPt(minXPtId + 1, points);
-  //left-most point is always convex.
-  var orient = orientation(leftMin, minXPt, rightMin);
-  if (orient === RIGHT) {
-    points.reverse();
-  }
-}
-*/
 function determinant(a, b, c) {
   //calculate the orientation determinant
   det = b.x * c.y - a.x * c.y + a.x * b.y - b.y * c.x + a.y * c.x - a.y * b.x;
