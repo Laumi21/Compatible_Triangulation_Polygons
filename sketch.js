@@ -252,7 +252,12 @@ class Polygon {
       if (id === -1) {
         //this.edges.push(tri.edges[i]);
         //invert edge sense
-        this.edges.push(new Edge(this.vertices[tri.edges[i].end.id],this.vertices[tri.edges[i].start.id]));
+        this.edges.push(
+          new Edge(
+            this.vertices[tri.edges[i].end.id],
+            this.vertices[tri.edges[i].start.id]
+          )
+        );
         console.log(tri.edges[i]);
         console.log("add");
       } else {
@@ -313,13 +318,32 @@ function findCompatibleTriangulation(triangles, poly) {
     console.log("turn: " + str(i));
     if (c !== ab.start && c !== ab.end) {
       let abc = new Triangle(ab.start, ab.end, c);
-      //console.log(abc);
-      if (abc.IsLeftTurn()) {
+      let abc2 = new Triangle(
+        poly2.vertices[ab.start.polyId],
+        poly2.vertices[ab.end.polyId],
+        poly2.vertices[c.polyId]
+      );
+      console.log(abc2);
+      if (abc.IsLeftTurn() && abc2.IsLeftTurn()) {
+        let interac0 = poly.checkIntersection(new Edge(ab.start, c));
+        let interbc0 = poly.checkIntersection(new Edge(ab.end, c));
         let interac1 = poly1.checkIntersection(new Edge(ab.start, c));
         let interbc1 = poly1.checkIntersection(new Edge(ab.end, c));
+        let interac2 = poly2.checkIntersection(new Edge(abc2.pt1, abc2.pt3));
+        let interbc2 = poly2.checkIntersection(new Edge(abc2.pt2, abc2.pt3));
         let inside = abc.containOneOf(poly1.vertices);
+        let inside2 = abc2.containOneOf(poly2.vertices);
         //TODO checks for poly2
-        if (!interac1 && !interbc1 && !inside) {
+        if (
+          !interac1 &&
+          !interbc1 &&
+          !inside &&
+          !inside2 &&
+          !interac0 &&
+          !interbc0 &&
+          !interac2 &&
+          !interbc2
+        ) {
           let newTriangles = copyList(triangles);
           newTriangles.push(abc);
           //console.log("zzz");
@@ -410,7 +434,7 @@ function next() {
   noClick = true;
   if (phase === 0 && poly1.vertices.length > 2) {
     //TODO some check
-    poly1.addEdge( poly1.vertices[poly1.vertices.length - 1],poly1.vertices[0]);
+    poly1.addEdge(poly1.vertices[poly1.vertices.length - 1], poly1.vertices[0]);
     let check = poly1.checkSelfIntersect();
     for (let i = 0; i < poly1.vertices.length; i++) {
       poly1.vertices[i].polyId = i;
