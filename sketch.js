@@ -250,7 +250,9 @@ class Polygon {
       }
       //console.log("test2");
       if (id === -1) {
-        this.edges.push(tri.edges[i]);
+        //this.edges.push(tri.edges[i]);
+        //invert edge sense
+        this.edges.push(new Edge(this.vertices[tri.edges[i].end.id],this.vertices[tri.edges[i].start.id]));
         console.log(tri.edges[i]);
         console.log("add");
       } else {
@@ -408,7 +410,7 @@ function next() {
   noClick = true;
   if (phase === 0 && poly1.vertices.length > 2) {
     //TODO some check
-    poly1.addEdge(poly1.vertices[0], poly1.vertices[poly1.vertices.length - 1]);
+    poly1.addEdge( poly1.vertices[poly1.vertices.length - 1],poly1.vertices[0]);
     let check = poly1.checkSelfIntersect();
     for (let i = 0; i < poly1.vertices.length; i++) {
       poly1.vertices[i].polyId = i;
