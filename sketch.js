@@ -52,14 +52,14 @@ class Triangle {
     }
   }
   containOneOf(ptList) {
-    console.log("a");
+    //console.log("a");
     for (let i = 0; i < ptList.length; i++) {
       let res = this.contain(ptList[i]);
       if (res) {
         return true;
       }
     }
-    console.log("nothing");
+    //console.log("nothing");
     return false;
   }
 }
@@ -258,12 +258,12 @@ class Polygon {
             this.vertices[tri.edges[i].start.id]
           )
         );
-        console.log(tri.edges[i]);
-        console.log("add");
+        //console.log(tri.edges[i]);
+        //console.log("add");
       } else {
         this.edges.splice(id, 1);
         //console.log("remove");
-        console.log("remove (" + str(this.edges.length) + " left)");
+        //console.log("remove (" + str(this.edges.length) + " left)");
       }
     }
     this.checkPoints([tri.pt1, tri.pt2, tri.pt3]);
@@ -278,7 +278,7 @@ class Polygon {
           (points[i].x === this.edges[j].end.x &&
             points[i].y === this.edges[j].end.y)
         ) {
-          console.log("pt found");
+          //console.log("pt found");
           found = true;
           break;
         }
@@ -315,7 +315,7 @@ function findCompatibleTriangulation(triangles, poly) {
   }
   for (let i = 0; i < poly.vertices.length; i++) {
     let c = poly.vertices[i];
-    console.log("turn: " + str(i));
+    //console.log("turn: " + str(i));
     if (c !== ab.start && c !== ab.end) {
       let abc = new Triangle(ab.start, ab.end, c);
       let abc2 = new Triangle(
@@ -323,7 +323,7 @@ function findCompatibleTriangulation(triangles, poly) {
         poly2.vertices[ab.end.polyId],
         poly2.vertices[c.polyId]
       );
-      console.log(abc2);
+      //console.log(abc2);
       if (abc.IsLeftTurn() && abc2.IsLeftTurn()) {
         let interac0 = poly.checkIntersection(new Edge(ab.start, c));
         let interbc0 = poly.checkIntersection(new Edge(ab.end, c));
@@ -347,19 +347,20 @@ function findCompatibleTriangulation(triangles, poly) {
           let newTriangles = copyList(triangles);
           newTriangles.push(abc);
           //console.log("zzz");
-          console.log("clonage");
-          console.log(poly);
+          //console.log("clonage");
+          //console.log(poly);
           let newPoly = poly.clone();
-          console.log(newPoly);
+          //console.log(newPoly);
           newPoly.remove(abc);
           //console.log("zzza");
           if (newPoly.vertices.length !== 0) {
-            //newTriangles = findCompatibleTriangulation(newTriangles, newPoly);
+            newTriangles = findCompatibleTriangulation(newTriangles, newPoly);
             if (newTriangles !== null) {
-              polyCheck = newPoly;
+              //polyCheck = newPoly;
               return newTriangles;
             }
           } else {
+            console.log("done");
             polyCheck = newPoly;
             return newTriangles;
           }
@@ -407,6 +408,7 @@ const OUTSIDE = "OUTSIDE";
 
 var poly1 = new Polygon();
 var poly2;
+var time = 0;
 var polyCheck = null;
 var liTri = [];
 var errorMessage = "";
@@ -459,16 +461,20 @@ function next() {
       phase += 1;
     }
   }
-  if (phase > 1) {
+  if (phase === 2) {
     if (polyCheck === null) {
       polyCheck = poly1.clone();
     }
     errorMessage = "";
     //console.log("neh");
     liTri = findCompatibleTriangulation(liTri, polyCheck);
-    console.log("done");
-    console.log(liTri);
-    console.log(polyCheck);
+    console.log(polyCheck.edges.length);
+    if (liTri === null) {
+      console.log("Echec");
+      errorMessage = "Compatible triangulation not found. Please reset";
+    } else if (polyCheck.edges.length === 0) {
+      phase += 1;
+    }
   }
 }
 function reset() {
@@ -476,6 +482,7 @@ function reset() {
   noClick = true;
   polyCheck = null;
   phase = 0;
+  time = 0;
   poly1.vertices.length = 0;
   poly1.edges.length = 0;
   liTri = [];
@@ -492,6 +499,10 @@ function getText() {
     );
   } else if (phase === 1) {
     return "Drag and drop points to build the polygon 2 ";
+  } else if (phase === 2) {
+    return "The compatible triangulatrion is being computed";
+  } else if (phase === 3) {
+    return "Resulting animation";
   } else {
     return "TODO";
   }
@@ -523,6 +534,54 @@ function draw() {
     }
     stroke("black");
     polyCheck.draw();
+  } else if (phase === 3) {
+    animation();
+  }
+}
+
+function animation() {
+  time += 1;
+  let epsi = 0.5 * (sin(0.02 * time) + 1);
+  fill("green");
+  for (let i = 0; i < poly1.vertices.length; i++) {
+    //console.log("a");
+    let x = epsi * poly1.vertices[i].x + (1 - epsi) * poly2.vertices[i].x;
+    let y = epsi * poly1.vertices[i].y + (1 - epsi) * poly2.vertices[i].y;
+    ellipse(x, y, pointSize, pointSize);
+    text(str(i), x, y);
+  }
+  for (let i = 0; i < poly1.edges.length; i++) {
+    let x1 =
+      epsi * poly1.edges[i].start.x + (1 - epsi) * poly2.edges[i].start.x;
+    let y1 =
+      epsi * poly1.edges[i].start.y + (1 - epsi) * poly2.edges[i].start.y;
+    let x2 = epsi * poly1.edges[i].end.x + (1 - epsi) * poly2.edges[i].end.x;
+    let y2 = epsi * poly1.edges[i].end.y + (1 - epsi) * poly2.edges[i].end.y;
+    line(x1, y1, x2, y2);
+  }
+  stroke("red");
+  for (let i = 0; i < liTri.length; i++) {
+    let x1 =
+      epsi * liTri[i].pt1.x +
+      (1 - epsi) * poly2.vertices[liTri[i].pt1.polyId].x;
+    let x2 =
+      epsi * liTri[i].pt2.x +
+      (1 - epsi) * poly2.vertices[liTri[i].pt2.polyId].x;
+    let x3 =
+      epsi * liTri[i].pt3.x +
+      (1 - epsi) * poly2.vertices[liTri[i].pt3.polyId].x;
+    let y1 =
+      epsi * liTri[i].pt1.y +
+      (1 - epsi) * poly2.vertices[liTri[i].pt1.polyId].y;
+    let y2 =
+      epsi * liTri[i].pt2.y +
+      (1 - epsi) * poly2.vertices[liTri[i].pt2.polyId].y;
+    let y3 =
+      epsi * liTri[i].pt3.y +
+      (1 - epsi) * poly2.vertices[liTri[i].pt3.polyId].y;
+    line(x1, y1, x2, y2);
+    line(x2, y2, x3, y3);
+    line(x3, y3, x1, y1);
   }
 }
 
