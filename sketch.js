@@ -2,18 +2,19 @@
 
 // Project
 // Laurie Van Bogaert
-//
+// Compatible traingulations of simple polygons
 
 class Point {
   constructor(x, y) {
+    // class to represent a point
     this.x = x;
     this.y = y;
     this.id = null;
     this.polyId = null;
-    //this.poly2Id = null;
     this.isSelected = false;
   }
   clone() {
+    //methode to duplicate points
     let clo = new Point(this.x, this.y);
     clo.polyId = this.polyId;
     clo.id = this.id;
@@ -21,6 +22,7 @@ class Point {
   }
 }
 class Triangle {
+  //Class to represent a triangle that will be part of a triangulation
   constructor(pt1, pt2, pt3) {
     this.pt1 = pt1;
     this.pt2 = pt2;
@@ -31,17 +33,19 @@ class Triangle {
     this.edges.push(new Edge(pt3, pt1));
   }
   clone() {
+    //method to duplicate a triangle
     let a = this.pt1.clone();
     let b = this.pt2.clone();
     let c = this.pt3.clone();
     return new Triangle(a, b, c);
   }
   IsLeftTurn() {
+    //Check if the triangle is left turn or not
     let ori = orientation(this.pt1, this.pt2, this.pt3);
-    //console.log(ori);
     return ori === RIGHT ? false : true;
   }
   contain(pt) {
+    //return true if a point is inside a triangle
     let or1 = orientation(this.pt1, this.pt2, pt);
     let or2 = orientation(this.pt2, this.pt3, pt);
     let or3 = orientation(this.pt3, this.pt1, pt);
@@ -52,18 +56,18 @@ class Triangle {
     }
   }
   containOneOf(ptList) {
-    //console.log("a");
+    //return true if a pt of the list is inside the triangle
     for (let i = 0; i < ptList.length; i++) {
       let res = this.contain(ptList[i]);
       if (res) {
         return true;
       }
     }
-    //console.log("nothing");
     return false;
   }
 }
 class Edge {
+  //class that represent an edge
   constructor(pt1, pt2) {
     this.start = pt1;
     this.end = pt2;
@@ -82,16 +86,19 @@ class Edge {
     return false;
   }
   clone() {
+    //method to duplicate an edge
     let clo = new Edge(this.start.clone(), this.end.clone());
     return clo;
   }
 }
 class Polygon {
+  //class that represent a polygon
   constructor() {
     this.vertices = [];
     this.edges = [];
   }
   addNewVertice(pt) {
+    //method to add a vertice into the polygon (and add edges with the last inserted vertices)
     var ok = true;
     if (this.vertices.length > 0) {
       if (
@@ -124,16 +131,14 @@ class Polygon {
     if (ok) {
       this.vertices.push(pt);
     }
-    //console.log(this.vertices.length);
   }
   addEdge(pt1, pt2) {
-    //this.edges.push([pt1, pt2]);
+    //method to add an edge
     this.edges.push(new Edge(pt1, pt2));
   }
   draw() {
-    //console.log("a");
+    //method to draw the polygon
     for (let i = 0; i < this.vertices.length; i++) {
-      //console.log("a");
       if (this.vertices[i].isSelected) {
         fill("orange");
       } else {
@@ -162,14 +167,12 @@ class Polygon {
       let st = this.edges[i].start.id;
       let en = this.edges[i].end.id;
       clo.edges[i] = new Edge(vert[st], vert[en]);
-      //console.log(newE.length);
     }
-    //console.log(clo.edges.length);
-    //console.log(clo.edges);
-    //poly.edges = newE;
+
     return clo;
   }
   checkSelfIntersect() {
+    //check that there is no intersections between the edges
     for (let i = 0; i < this.edges.length; i++) {
       for (let j = 0; j < this.edges.length; j++) {
         if (i !== j) {
@@ -183,6 +186,7 @@ class Polygon {
     return false;
   }
   checkIntersection(e) {
+    //check that the edge e does not intersect any edge of this polygon
     for (let j = 0; j < this.edges.length; j++) {
       let check = e.intersect(this.edges[j]);
       if (check) {
@@ -196,7 +200,6 @@ class Polygon {
     //if it is right turn, the list is reversed to get a left turn
 
     let id = this.findMinX();
-    //console.log("ahhh");
     let leftId = id - 1 < 0 ? this.vertices.length + (id - 1) : id - 1;
     let rightId =
       id + 1 > this.vertices.length - 1
@@ -219,6 +222,7 @@ class Polygon {
     }
   }
   findMinX() {
+    //find the vertex with the minimum x coordinate
     let minPt = this.vertices[0];
     let minXPtId = 0;
     for (let i = 0; i < this.vertices.length; i++) {
@@ -227,10 +231,10 @@ class Polygon {
         minXPtId = i;
       }
     }
-    //console.log("min:" + str(minXPtId));
     return minXPtId;
   }
   remove(tri) {
+    //remove the triangle tri from the polygon
     for (let i = 0; i < tri.edges.length; i++) {
       let id = -1;
       for (let j = 0; j < this.edges.length; j++) {
@@ -248,27 +252,22 @@ class Polygon {
           break;
         }
       }
-      //console.log("test2");
+
       if (id === -1) {
-        //this.edges.push(tri.edges[i]);
-        //invert edge sense
         this.edges.push(
           new Edge(
             this.vertices[tri.edges[i].end.id],
             this.vertices[tri.edges[i].start.id]
           )
         );
-        //console.log(tri.edges[i]);
-        //console.log("add");
       } else {
         this.edges.splice(id, 1);
-        //console.log("remove");
-        //console.log("remove (" + str(this.edges.length) + " left)");
       }
     }
     this.checkPoints([tri.pt1, tri.pt2, tri.pt3]);
   }
   checkPoints(points) {
+    //check that there is no unused vertex in the list points. If one is found it is removed.
     for (let i = 0; i < points.length; i++) {
       let found = false;
       for (let j = 0; j < this.edges.length; j++) {
@@ -278,13 +277,11 @@ class Polygon {
           (points[i].x === this.edges[j].end.x &&
             points[i].y === this.edges[j].end.y)
         ) {
-          //console.log("pt found");
           found = true;
           break;
         }
       }
       if (!found) {
-        //console.log("must remove");
         let id = -1;
         for (let j = 0; j < this.vertices.length; j++) {
           if (
@@ -303,19 +300,21 @@ class Polygon {
     this.identifyVertices();
   }
   identifyVertices() {
+    //update id attribute of the vertices
     for (let i = 0; i < this.vertices.length; i++) {
       this.vertices[i].id = i;
     }
   }
 }
 function findCompatibleTriangulation(triangles, poly) {
+  //recursive algorithm to find a compatible triangulation
   let ab = poly.edges[0];
   if (triangles.length > poly1.edges) {
     return null;
   }
   for (let i = 0; i < poly.vertices.length; i++) {
     let c = poly.vertices[i];
-    //console.log("turn: " + str(i));
+
     if (c !== ab.start && c !== ab.end) {
       let abc = new Triangle(ab.start, ab.end, c);
       let abc2 = new Triangle(
@@ -323,7 +322,7 @@ function findCompatibleTriangulation(triangles, poly) {
         poly2.vertices[ab.end.polyId],
         poly2.vertices[c.polyId]
       );
-      //console.log(abc2);
+
       if (abc.IsLeftTurn() && abc2.IsLeftTurn()) {
         let interac0 = poly.checkIntersection(new Edge(ab.start, c));
         let interbc0 = poly.checkIntersection(new Edge(ab.end, c));
@@ -333,7 +332,7 @@ function findCompatibleTriangulation(triangles, poly) {
         let interbc2 = poly2.checkIntersection(new Edge(abc2.pt2, abc2.pt3));
         let inside = abc.containOneOf(poly1.vertices);
         let inside2 = abc2.containOneOf(poly2.vertices);
-        //TODO checks for poly2
+
         if (
           !interac1 &&
           !interbc1 &&
@@ -346,17 +345,14 @@ function findCompatibleTriangulation(triangles, poly) {
         ) {
           let newTriangles = copyList(triangles);
           newTriangles.push(abc);
-          //console.log("zzz");
-          //console.log("clonage");
-          //console.log(poly);
+
           let newPoly = poly.clone();
-          //console.log(newPoly);
+
           newPoly.remove(abc);
-          //console.log("zzza");
+
           if (newPoly.vertices.length !== 0) {
             newTriangles = findCompatibleTriangulation(newTriangles, newPoly);
             if (newTriangles !== null) {
-              //polyCheck = newPoly;
               return newTriangles;
             }
           } else {
@@ -377,28 +373,11 @@ function copyList(li) {
   }
   return newLi;
 }
-/*
-function findMinX() {
-  var minPt = points[0];
-  for (i = 0; i < points.length; i++) {
-    if (points[i].x < minPt.x) {
-      minPt = points[i];
-      minXPtId = i;
-    }
-  }
-  return minPt;
-}
-*/
 
-//var points = []; //list of pts
-//var pointsOk = []; //list of already processed pts
-//var triangles = []; //list of triangles
+//global variables and constants
 var noClick = false;
 var selectedPoint = null;
-//var computeTri = false;
-//var minXPt = null;
-//var minXPtId = null;
-//some constants
+
 const LEFT = "LEFT";
 const ALIGNED = "ALIGNED";
 const RIGHT = "RIGHT";
@@ -425,17 +404,14 @@ function setup() {
   button2 = createButton("Next");
   button2.position(30, 95);
   button2.mousePressed(next);
-  //button3 = createButton("Triangulate");
-  //button3.position(30, 115);
-  //button3.mousePressed(triangulate);
   fill("black");
   textSize(40);
 }
 
 function next() {
+  //change of the state of the program
   noClick = true;
   if (phase === 0 && poly1.vertices.length > 2) {
-    //TODO some check
     poly1.addEdge(poly1.vertices[poly1.vertices.length - 1], poly1.vertices[0]);
     let check = poly1.checkSelfIntersect();
     for (let i = 0; i < poly1.vertices.length; i++) {
@@ -466,9 +442,9 @@ function next() {
       polyCheck = poly1.clone();
     }
     errorMessage = "";
-    //console.log("neh");
+
     liTri = findCompatibleTriangulation(liTri, polyCheck);
-    console.log(polyCheck.edges.length);
+    //console.log(polyCheck.edges.length);
     if (liTri === null) {
       console.log("Echec");
       errorMessage = "Compatible triangulation not found. Please reset";
@@ -487,10 +463,10 @@ function reset() {
   poly1.edges.length = 0;
   liTri = [];
   errorMessage = "";
-  //var poly1 = new Polygon();
 }
 
 function getText() {
+  //get the text that correspond to the state
   if (phase === 0) {
     return (
       "Please click to build the polygon 1 ( " +
@@ -540,11 +516,11 @@ function draw() {
 }
 
 function animation() {
+  //draw the animation for the last state
   time += 1;
   let epsi = 0.5 * (sin(0.02 * time) + 1);
   fill("green");
   for (let i = 0; i < poly1.vertices.length; i++) {
-    //console.log("a");
     let x = epsi * poly1.vertices[i].x + (1 - epsi) * poly2.vertices[i].x;
     let y = epsi * poly1.vertices[i].y + (1 - epsi) * poly2.vertices[i].y;
     ellipse(x, y, pointSize, pointSize);
@@ -609,6 +585,7 @@ windowResized = function () {
 };
 
 function selectPoint(x, y) {
+  //function to find which point is selected
   for (let i = 0; i < poly2.vertices.length; i++) {
     if (
       abs(poly2.vertices[i].x - x) <= pointSize &&
@@ -621,6 +598,7 @@ function selectPoint(x, y) {
   }
 }
 function mouseReleased() {
+  //function to call when mouse is released
   if (!noClick && selectPoint !== null) {
     selectedPoint.isSelected = false;
     selectedPoint.x = mouseX;
@@ -638,7 +616,5 @@ function mousePressed() {
     } else if (phase === 1) {
       selectPoint(mouseX, mouseY);
     }
-    //points.push(new Point(mouseX, mouseY));
-    //minXPt = findMinX();
   }
 }
