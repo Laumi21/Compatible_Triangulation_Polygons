@@ -390,6 +390,7 @@ var poly2;
 var time = 0;
 var polyCheck = null;
 var liTri = [];
+var liCol = null;
 var errorMessage = "";
 var phase = 0;
 var pointSize = 10;
@@ -449,6 +450,7 @@ function next() {
       console.log("Echec");
       errorMessage = "Compatible triangulation not found. Please reset";
     } else if (polyCheck.edges.length === 0) {
+      liCol = createColorList(liTri);
       phase += 1;
     }
   }
@@ -462,7 +464,21 @@ function reset() {
   poly1.vertices.length = 0;
   poly1.edges.length = 0;
   liTri = [];
+  liCol = null;
   errorMessage = "";
+}
+
+function createColorList(li) {
+  let colLi = [];
+  for (let l = 0; l < li.length; l++) {
+    let col = [
+      Math.round(255 * Math.random()),
+      Math.round(255 * Math.random()),
+      Math.round(255 * Math.random())
+    ];
+    colLi.push(col);
+  }
+  return colLi;
 }
 
 function getText() {
@@ -555,6 +571,8 @@ function animation() {
     let y3 =
       epsi * liTri[i].pt3.y +
       (1 - epsi) * poly2.vertices[liTri[i].pt3.polyId].y;
+    fill(liCol[i]);
+    triangle(x1, y1, x2, y2, x3, y3);
     line(x1, y1, x2, y2);
     line(x2, y2, x3, y3);
     line(x3, y3, x1, y1);
