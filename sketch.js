@@ -2,7 +2,7 @@
 
 // Project
 // Laurie Van Bogaert
-// Compatible traingulations of simple polygons
+// Compatible triangulations of simple polygons
 
 class Point {
   constructor(x, y) {
@@ -305,6 +305,12 @@ class Polygon {
       this.vertices[i].id = i;
     }
   }
+  shiftVertices() {
+    //the ith vertice become i+1th and the nth vertex becamo vertex 0.
+    let nVert = this.vertices.pop();
+    this.vertices.unshift(nVert);
+    this.identifyVertices();
+  }
 }
 function findCompatibleTriangulation(triangles, poly) {
   //recursive algorithm to find a compatible triangulation
@@ -443,8 +449,17 @@ function next() {
       polyCheck = poly1.clone();
     }
     errorMessage = "";
-
-    liTri = findCompatibleTriangulation(liTri, polyCheck);
+    for (let i = 0; i < poly1.vertices.length - 1; i++) {
+      liTri = findCompatibleTriangulation(liTri, polyCheck);
+      if (liTri === null && i < poly1.vertices.length - 2) {
+        polyCheck = poly1.clone();
+        poly2.shiftVertices();
+        liTri = [];
+      } else {
+        break;
+      }
+    }
+    //liTri = findCompatibleTriangulation(liTri, polyCheck);
     //console.log(polyCheck.edges.length);
     if (liTri === null) {
       console.log("Echec");
@@ -535,22 +550,7 @@ function animation() {
   //draw the animation for the last state
   time += 1;
   let epsi = 0.5 * (sin(0.02 * time) + 1);
-  fill("green");
-  for (let i = 0; i < poly1.vertices.length; i++) {
-    let x = epsi * poly1.vertices[i].x + (1 - epsi) * poly2.vertices[i].x;
-    let y = epsi * poly1.vertices[i].y + (1 - epsi) * poly2.vertices[i].y;
-    ellipse(x, y, pointSize, pointSize);
-    text(str(i), x, y);
-  }
-  for (let i = 0; i < poly1.edges.length; i++) {
-    let x1 =
-      epsi * poly1.edges[i].start.x + (1 - epsi) * poly2.edges[i].start.x;
-    let y1 =
-      epsi * poly1.edges[i].start.y + (1 - epsi) * poly2.edges[i].start.y;
-    let x2 = epsi * poly1.edges[i].end.x + (1 - epsi) * poly2.edges[i].end.x;
-    let y2 = epsi * poly1.edges[i].end.y + (1 - epsi) * poly2.edges[i].end.y;
-    line(x1, y1, x2, y2);
-  }
+
   stroke("red");
   for (let i = 0; i < liTri.length; i++) {
     let x1 =
@@ -576,6 +576,27 @@ function animation() {
     line(x1, y1, x2, y2);
     line(x2, y2, x3, y3);
     line(x3, y3, x1, y1);
+  }
+  fill("green");
+  stroke("black");
+  for (let i = 0; i < poly1.vertices.length; i++) {
+    let x = epsi * poly1.vertices[i].x + (1 - epsi) * poly2.vertices[i].x;
+    let y = epsi * poly1.vertices[i].y + (1 - epsi) * poly2.vertices[i].y;
+    ellipse(x, y, pointSize, pointSize);
+    text(str(i), x, y);
+  }
+  for (let i = 0; i < poly1.edges.length; i++) {
+    let poly2pt1Id = poly1.edges[i].start.polyId;
+    let poly2pt2Id = poly1.edges[i].end.polyId;
+    let x1 =
+      epsi * poly1.edges[i].start.x + (1 - epsi) * poly2.vertices[poly2pt1Id].x;
+    let y1 =
+      epsi * poly1.edges[i].start.y + (1 - epsi) * poly2.vertices[poly2pt1Id].y;
+    let x2 =
+      epsi * poly1.edges[i].end.x + (1 - epsi) * poly2.vertices[poly2pt2Id].x;
+    let y2 =
+      epsi * poly1.edges[i].end.y + (1 - epsi) * poly2.vertices[poly2pt2Id].y;
+    line(x1, y1, x2, y2);
   }
 }
 
