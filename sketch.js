@@ -332,22 +332,26 @@ function findCompatibleTriangulation(triangles, poly) {
       if (abc.IsLeftTurn() && abc2.IsLeftTurn()) {
         let interac0 = poly.checkIntersection(new Edge(ab.start, c));
         let interbc0 = poly.checkIntersection(new Edge(ab.end, c));
-        let interac1 = poly1.checkIntersection(new Edge(ab.start, c));
-        let interbc1 = poly1.checkIntersection(new Edge(ab.end, c));
-        let interac2 = poly2.checkIntersection(new Edge(abc2.pt1, abc2.pt3));
-        let interbc2 = poly2.checkIntersection(new Edge(abc2.pt2, abc2.pt3));
+        //let interac1 = poly1.checkIntersection(new Edge(ab.start, c));
+        //let interbc1 = poly1.checkIntersection(new Edge(ab.end, c));
+        //let interac2 = poly2.checkIntersection(new Edge(abc2.pt1, abc2.pt3));
+        //blet interbc2 = poly2.checkIntersection(new Edge(abc2.pt2, abc2.pt3));
+        let interac02 = checkInterBoundariesPoly2(new Edge(abc2.pt1, abc2.pt3),poly);
+        let interbc02 = checkInterBoundariesPoly2(new Edge(abc2.pt2, abc2.pt3),poly);
         let inside = abc.containOneOf(poly1.vertices);
         let inside2 = abc2.containOneOf(poly2.vertices);
 
         if (
-          !interac1 &&
-          !interbc1 &&
+          //!interac1 &&
+          //!interbc1 &&
           !inside &&
           !inside2 &&
           !interac0 &&
           !interbc0 &&
-          !interac2 &&
-          !interbc2
+          //!interac2 &&
+          //!interbc2 &&
+          !interac02 &&
+          !interbc02
         ) {
           let newTriangles = copyList(triangles);
           newTriangles.push(abc);
@@ -372,6 +376,20 @@ function findCompatibleTriangulation(triangles, poly) {
   }
   return null;
 }
+
+
+function checkInterBoundariesPoly2(e,poly) {
+  //check that the edge e does not intersect any edge of the poly algorithm transposed to the second polygon
+  for (let j = 0; j < poly.edges.length; j++) {
+    let eP2 = new Edge(poly2.vertices[poly.edges[j].start.polyId],poly2.vertices[poly.edges[j].end.polyId])
+    let check = e.intersect(eP2);
+    if (check) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function copyList(li) {
   let newLi = [];
   for (let i = 0; i < li.length; i++) {
@@ -443,6 +461,7 @@ function next() {
       poly2.makeLeftTurn();
       phase += 1;
     }
+    poly2.identifyVertices();
   }
   if (phase === 2) {
     if (polyCheck === null) {
@@ -531,7 +550,7 @@ function draw() {
     poly1.draw();
   } else if (phase === 1) {
     poly2.draw();
-  } else if (phase === 2) {
+  } else if (phase === 2 && liTri !== null) {
     //polyCheck.draw();
     stroke("red");
     for (let i = 0; i < liTri.length; i++) {
@@ -638,7 +657,7 @@ function selectPoint(x, y) {
 }
 function mouseReleased() {
   //function to call when mouse is released
-  if (!noClick && selectPoint !== null) {
+  if (!noClick && selectedPoint !== null) {
     selectedPoint.isSelected = false;
     selectedPoint.x = mouseX;
     selectedPoint.y = mouseY;
